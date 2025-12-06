@@ -1,0 +1,64 @@
+import React, { useState, useEffect } from 'react';
+import { Layout } from './components/Layout';
+import { Dashboard } from './pages/Dashboard';
+import { PromptRegistry } from './pages/PromptRegistry';
+import { PromptEditor } from './pages/PromptEditor';
+import { Playground } from './pages/Playground';
+import { Evaluations } from './pages/Evaluations';
+import { LogsViewer } from './pages/LogsViewer';
+import { Settings } from './pages/Settings';
+import { storage } from './services/storage';
+
+const App: React.FC = () => {
+  // Simple state-based routing for this demo
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
+
+  useEffect(() => {
+    storage.init();
+  }, []);
+
+  const handleNavigate = (view: string) => {
+    setCurrentView(view);
+    if (view !== 'editor') {
+      setSelectedPromptId(null);
+    }
+  };
+
+  const handleSelectPrompt = (id: string) => {
+    setSelectedPromptId(id);
+    setCurrentView('editor');
+  };
+
+  const renderContent = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'registry':
+        return <PromptRegistry onSelectPrompt={handleSelectPrompt} />;
+      case 'editor':
+        if (selectedPromptId) {
+            return <PromptEditor promptId={selectedPromptId} onBack={() => handleNavigate('registry')} />;
+        }
+        return <PromptRegistry onSelectPrompt={handleSelectPrompt} />; // Fallback
+      case 'playground':
+        return <Playground />;
+      case 'evals':
+        return <Evaluations />;
+      case 'logs':
+        return <LogsViewer />;
+      case 'settings':
+        return <Settings />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
+  return (
+    <Layout currentView={currentView} onViewChange={handleNavigate}>
+      {renderContent()}
+    </Layout>
+  );
+};
+
+export default App;
