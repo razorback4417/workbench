@@ -5,10 +5,10 @@ export enum Role {
 }
 
 export enum ModelType {
-  GEMINI_FLASH = 'gemini-2.5-flash',
-  GEMINI_PRO = 'gemini-3-pro-preview',
-  GPT_4 = 'gpt-4-turbo', // For UI mockup
-  CLAUDE_3 = 'claude-3-opus', // For UI mockup
+  GEMINI_2_0_FLASH_EXP = 'gemini-2.0-flash-exp',
+  GEMINI_2_0_FLASH_LITE = 'gemini-2.0-flash-lite',
+  GEMINI_2_0_FLASH = 'gemini-2.0-flash',
+  GEMINI_2_5_FLASH = 'gemini-2.5-flash',
 }
 
 export interface User {
@@ -32,12 +32,9 @@ export interface PromptVersion {
   status: 'draft' | 'staging' | 'production' | 'archived';
 }
 
-export interface GitHubConfig {
-  connected: boolean;
-  repoUrl?: string;
-  branch?: string;
-  filePath?: string;
-  lastSyncedAt?: string;
+export interface FileConfig {
+  lastExportedAt?: string;
+  lastImportedAt?: string;
 }
 
 export interface Prompt {
@@ -48,7 +45,7 @@ export interface Prompt {
   activeVersionId: string;
   updatedAt: string;
   versions: PromptVersion[];
-  github?: GitHubConfig;
+  fileConfig?: FileConfig;
 }
 
 export interface LogEntry {
@@ -82,4 +79,26 @@ export interface EvalRun {
   status: 'passed' | 'failed' | 'running';
   sampleSize: number;
   results?: EvalResultItem[];
+}
+
+export interface ABTest {
+  id: string;
+  name: string;
+  description: string;
+  variants: Array<{
+    promptId: string;
+    versionId: string;
+    weight: number; // 0-100, percentage of traffic
+  }>;
+  status: 'draft' | 'running' | 'paused' | 'completed';
+  startDate: string;
+  endDate?: string;
+  metrics: {
+    totalRequests: number;
+    successRate: number;
+    avgLatency: number;
+    avgCost: number;
+    errorRate: number;
+  };
+  winnerVariantId?: string; // Index of winning variant
 }

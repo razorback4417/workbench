@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation markdown files (keep README.md)
+FEATURE_VERIFICATION.md
+QUICK_START.md
+PITCH.md
+PLATFORM_STATUS.md
+IMPLEMENTATION_STATUS.md

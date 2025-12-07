@@ -1,0 +1,14 @@
+{
+  "name": "Email Summarizer",
+  "description": "Summarizes long emails into concise bullet points for quick reading",
+  "tags": ["email", "productivity", "summarization"],
+  "version": {
+    "template": "You are an email assistant. Summarize the following email into 3-5 concise bullet points.\n\nEmail Subject: {{subject}}\nEmail Body: {{email_body}}\n\nInstructions:\n- Extract key information and action items\n- Maintain important details like dates, names, and deadlines\n- Use clear, professional language\n- Keep each bullet point to one line\n\nSummary:",
+    "variables": ["subject", "email_body"],
+    "model": "gemini-2.5-flash",
+    "temperature": 0.3,
+    "status": "production"
+  },
+  "commitMessage": "Initial version - concise email summarization"
+}
+

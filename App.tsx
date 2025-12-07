@@ -7,12 +7,14 @@ import { Playground } from './pages/Playground';
 import { Evaluations } from './pages/Evaluations';
 import { LogsViewer } from './pages/LogsViewer';
 import { Settings } from './pages/Settings';
+import { ABTesting } from './pages/ABTesting';
 import { storage } from './services/storage';
 
 const App: React.FC = () => {
   // Simple state-based routing for this demo
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
+  const [registryRefreshKey, setRegistryRefreshKey] = useState(0);
 
   useEffect(() => {
     storage.init();
@@ -35,18 +37,24 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'registry':
-        return <PromptRegistry onSelectPrompt={handleSelectPrompt} />;
+        return <PromptRegistry key={registryRefreshKey} onSelectPrompt={handleSelectPrompt} />;
       case 'editor':
         if (selectedPromptId) {
-            return <PromptEditor promptId={selectedPromptId} onBack={() => handleNavigate('registry')} />;
+            return <PromptEditor
+              promptId={selectedPromptId}
+              onBack={() => handleNavigate('registry')}
+              onPromptUpdated={() => setRegistryRefreshKey(prev => prev + 1)}
+            />;
         }
-        return <PromptRegistry onSelectPrompt={handleSelectPrompt} />; // Fallback
+        return <PromptRegistry key={registryRefreshKey} onSelectPrompt={handleSelectPrompt} />; // Fallback
       case 'playground':
         return <Playground />;
       case 'evals':
         return <Evaluations />;
       case 'logs':
         return <LogsViewer />;
+      case 'abtesting':
+        return <ABTesting />;
       case 'settings':
         return <Settings />;
       default:

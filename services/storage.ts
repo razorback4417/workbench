@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   EVALS: 'pw_evals',
   API_KEYS: 'pw_api_keys',
   SETTINGS: 'pw_settings',
+  EVAL_DATASETS: 'pw_eval_datasets',
 };
 
 // Initialize storage with mock data if empty
@@ -54,12 +55,12 @@ export const storage = {
   createPromptVersion: async (promptId: string, versionData: Partial<PromptVersion>): Promise<PromptVersion> => {
     const prompts = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROMPTS) || '[]');
     const promptIndex = prompts.findIndex((p: Prompt) => p.id === promptId);
-    
+
     if (promptIndex === -1) throw new Error('Prompt not found');
 
     const prompt = prompts[promptIndex];
-    const newVersionNumber = prompt.versions.length > 0 
-      ? Math.max(...prompt.versions.map((v: PromptVersion) => v.version)) + 1 
+    const newVersionNumber = prompt.versions.length > 0
+      ? Math.max(...prompt.versions.map((v: PromptVersion) => v.version)) + 1
       : 1;
 
     const newVersion: PromptVersion = {
@@ -69,16 +70,16 @@ export const storage = {
       status: 'draft',
       template: versionData.template || '',
       variables: versionData.variables || [],
-      model: versionData.model || ModelType.GEMINI_FLASH,
+      model: versionData.model || ModelType.GEMINI_2_5_FLASH,
       temperature: versionData.temperature || 0.7,
-      createdBy: 'Theo Designer', // Mock user
+      createdBy: 'Theo', // Mock user
       commitMessage: versionData.commitMessage || `Version ${newVersionNumber}`,
     };
 
     prompt.versions.unshift(newVersion); // Add to top
     prompt.activeVersionId = newVersion.id;
     prompt.updatedAt = new Date().toISOString();
-    
+
     prompts[promptIndex] = prompt;
     localStorage.setItem(STORAGE_KEYS.PROMPTS, JSON.stringify(prompts));
     return newVersion;
@@ -130,5 +131,61 @@ export const storage = {
   getAllApiKeys: async (): Promise<Record<string, string>> => {
     await delay(50);
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.API_KEYS) || '{}');
-  }
+  },
+
+  // Update version status
+  updateVersionStatus: async (promptId: string, versionId: string, status: 'draft' | 'staging' | 'production' | 'archived'): Promise<void> => {
+    await delay(100);
+    const prompts = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROMPTS) || '[]');
+    const promptIndex = prompts.findIndex((p: Prompt) => p.id === promptId);
+
+    if (promptIndex === -1) throw new Error('Prompt not found');
+
+    const prompt = prompts[promptIndex];
+    const versionIndex = prompt.versions.findIndex((v: PromptVersion) => v.id === versionId);
+
+    if (versionIndex === -1) throw new Error('Version not found');
+
+    // If promoting to production, archive other production versions
+    if (status === 'production') {
+      prompt.versions.forEach((v: PromptVersion) => {
+        if (v.status === 'production' && v.id !== versionId) {
+          v.status = 'archived';
+        }
+      });
+      prompt.activeVersionId = versionId;
+    }
+
+    prompt.versions[versionIndex].status = status;
+    prompt.updatedAt = new Date().toISOString();
+
+    prompts[promptIndex] = prompt;
+    localStorage.setItem(STORAGE_KEYS.PROMPTS, JSON.stringify(prompts));
+  },
+
+  // Evaluation Datasets
+  getEvalDatasets: async (): Promise<any[]> => {
+    await delay(50);
+    const custom = JSON.parse(localStorage.getItem(STORAGE_KEYS.EVAL_DATASETS) || '[]');
+    return custom;
+  },
+
+  saveEvalDataset: async (dataset: any): Promise<void> => {
+    await delay(100);
+    const datasets = JSON.parse(localStorage.getItem(STORAGE_KEYS.EVAL_DATASETS) || '[]');
+    const index = datasets.findIndex((d: any) => d.id === dataset.id);
+    if (index !== -1) {
+      datasets[index] = dataset;
+    } else {
+      datasets.push(dataset);
+    }
+    localStorage.setItem(STORAGE_KEYS.EVAL_DATASETS, JSON.stringify(datasets));
+  },
+
+  deleteEvalDataset: async (id: string): Promise<void> => {
+    await delay(100);
+    let datasets = JSON.parse(localStorage.getItem(STORAGE_KEYS.EVAL_DATASETS) || '[]');
+    datasets = datasets.filter((d: any) => d.id !== id);
+    localStorage.setItem(STORAGE_KEYS.EVAL_DATASETS, JSON.stringify(datasets));
+  },
 };

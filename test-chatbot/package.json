@@ -1,0 +1,17 @@
+{
+  "name": "test-chatbot",
+  "version": "1.0.0",
+  "description": "Simple chatbot for testing PromptWorkbench",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2"
+  },
+  "keywords": ["chatbot", "promptworkbench", "testing"],
+  "author": "",
+  "license": "MIT"
+}
+

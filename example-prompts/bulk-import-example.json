@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Email Summarizer",
+    "description": "Summarizes long emails into concise bullet points for quick reading",
+    "tags": ["email", "productivity", "summarization"],
+    "version": {
+      "template": "You are an email assistant. Summarize the following email into 3-5 concise bullet points.\n\nEmail Subject: {{subject}}\nEmail Body: {{email_body}}\n\nInstructions:\n- Extract key information and action items\n- Maintain important details like dates, names, and deadlines\n- Use clear, professional language\n- Keep each bullet point to one line\n\nSummary:",
+      "variables": ["subject", "email_body"],
+      "model": "gemini-2.5-flash",
+      "temperature": 0.3,
+      "status": "production"
+    },
+    "commitMessage": "Initial version - concise email summarization"
+  },
+  {
+    "name": "Code Review Assistant",
+    "description": "Reviews code snippets for bugs, security issues, and best practices",
+    "tags": ["coding", "review", "security", "internal"],
+    "version": {
+      "template": "You are a senior software engineer conducting a code review.\n\nCode to review:\n```{{language}}\n{{code}}\n```\n\nReview the code for:\n1. Bugs and logic errors\n2. Security vulnerabilities\n3. Performance issues\n4. Code style and best practices\n5. Potential improvements\n\nProvide a structured review with:\n- Critical issues (must fix)\n- Suggestions (should fix)\n- Nice-to-haves (optional improvements)\n\nBe constructive and specific. Reference line numbers when possible.",
+      "variables": ["language", "code"],
+      "model": "gemini-2.5-flash",
+      "temperature": 0.2,
+      "status": "production"
+    },
+    "commitMessage": "Initial version - comprehensive code review"
+  },
+  {
+    "name": "Blog Post Generator",
+    "description": "Creates engaging, SEO-optimized blog posts from topic and outline",
+    "tags": ["content", "marketing", "seo", "blog"],
+    "version": {
+      "template": "You are a professional content writer. Create an engaging blog post based on the following information.\n\nTopic: {{topic}}\nTarget Audience: {{audience}}\nKey Points to Cover:\n{{key_points}}\n\nRequirements:\n- Write in a {{tone}} tone\n- Include an attention-grabbing headline\n- Structure with clear headings and subheadings\n- Use SEO-friendly language naturally\n- Include a compelling introduction and conclusion\n- Aim for approximately {{word_count}} words\n- Make it engaging and valuable for the target audience\n\nBlog Post:",
+      "variables": ["topic", "audience", "key_points", "tone", "word_count"],
+      "model": "gemini-2.5-flash",
+      "temperature": 0.8,
+      "status": "production"
+    },
+    "commitMessage": "Initial version - SEO-optimized blog generation"
+  }
+]
+

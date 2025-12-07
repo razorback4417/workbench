@@ -1,0 +1,14 @@
+{
+  "name": "Blog Post Generator",
+  "description": "Creates engaging, SEO-optimized blog posts from topic and outline",
+  "tags": ["content", "marketing", "seo", "blog"],
+  "version": {
+    "template": "You are a professional content writer. Create an engaging blog post based on the following information.\n\nTopic: {{topic}}\nTarget Audience: {{audience}}\nKey Points to Cover:\n{{key_points}}\n\nRequirements:\n- Write in a {{tone}} tone\n- Include an attention-grabbing headline\n- Structure with clear headings and subheadings\n- Use SEO-friendly language naturally\n- Include a compelling introduction and conclusion\n- Aim for approximately {{word_count}} words\n- Make it engaging and valuable for the target audience\n\nBlog Post:",
+    "variables": ["topic", "audience", "key_points", "tone", "word_count"],
+    "model": "gemini-2.5-flash",
+    "temperature": 0.8,
+    "status": "production"
+  },
+  "commitMessage": "Initial version - SEO-optimized blog generation"
+}
+
