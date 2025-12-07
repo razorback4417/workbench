@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Save, GitBranch, History, Layers, Upload, Download, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Play, Save, GitBranch, History, Layers, Upload, Download, RefreshCw, Rocket } from 'lucide-react';
 import { Prompt, PromptVersion, ModelType } from '../types';
 import { runPrompt } from '../services/llmService';
 import { storage } from '../services/storage';
@@ -35,6 +35,9 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({ promptId, onBack, on
   // Saving State
   const [isSaving, setIsSaving] = useState(false);
 
+  // Deployment State
+  const [isDeploying, setIsDeploying] = useState(false);
+
   // File Upload/Download State
   const [showFileModal, setShowFileModal] = useState(false);
 
@@ -42,8 +45,19 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({ promptId, onBack, on
     const loadData = async () => {
       const p = await storage.getPromptById(promptId);
       if (p) {
+        // Ensure activeVersionId points to a valid version
+        const validVersionId = p.versions.find(v => v.id === p.activeVersionId)
+          ? p.activeVersionId
+          : (p.versions.length > 0 ? p.versions[0].id : undefined);
+
         setPrompt(p);
-        setActiveVersionId(p.activeVersionId);
+        setActiveVersionId(validVersionId);
+
+        // Update activeVersionId if it was invalid
+        if (validVersionId && validVersionId !== p.activeVersionId) {
+          const updatedPrompt = { ...p, activeVersionId: validVersionId };
+          await storage.savePrompt(updatedPrompt);
+        }
       }
     };
     loadData();
@@ -159,27 +173,30 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({ promptId, onBack, on
   };
 
   const handleExportPrompt = () => {
-    if (!prompt || !currentVersion) return;
+    if (!prompt || !activeVersionId) return;
+
+    const versionToExport = prompt.versions.find(v => v.id === activeVersionId);
+    if (!versionToExport) return;
 
     const promptData = {
       name: prompt.name,
       description: prompt.description,
       tags: prompt.tags,
-      version: currentVersion.version,
-      template: currentVersion.template,
-      variables: currentVersion.variables,
-      model: currentVersion.model,
-      temperature: currentVersion.temperature,
-      status: currentVersion.status,
-      createdAt: currentVersion.createdAt,
-      commitMessage: currentVersion.commitMessage
+      version: versionToExport.version,
+      template: versionToExport.template,
+      variables: versionToExport.variables,
+      model: versionToExport.model,
+      temperature: versionToExport.temperature,
+      status: versionToExport.status,
+      createdAt: versionToExport.createdAt,
+      commitMessage: versionToExport.commitMessage
     };
 
     const blob = new Blob([JSON.stringify(promptData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${prompt.name.replace(/\s+/g, '-').toLowerCase()}-v${currentVersion.version}.json`;
+    a.download = `${prompt.name.replace(/\s+/g, '-').toLowerCase()}-v${versionToExport.version}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -217,6 +234,53 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({ promptId, onBack, on
 
     // Reset file input
     event.target.value = '';
+  };
+
+  const handleDeploy = async () => {
+    if (!prompt || !activeVersionId) return;
+
+    const version = prompt.versions.find(v => v.id === activeVersionId);
+    if (!version) return;
+
+    // Confirm deployment
+    const confirmed = window.confirm(
+      `Deploy version ${version.version} of "${prompt.name}" to production?\n\n` +
+      `This will make this version live for all users.`
+    );
+
+    if (!confirmed) return;
+
+    setIsDeploying(true);
+
+    try {
+      // Deploy to production - update version status
+      await storage.updateVersionStatus(prompt.id, activeVersionId, 'production');
+
+      // Refresh prompt data
+      const updatedPrompt = await storage.getPromptById(prompt.id);
+      if (updatedPrompt) {
+        setPrompt(updatedPrompt);
+
+        // Notify parent to refresh registry
+        if (onPromptUpdated) {
+          onPromptUpdated();
+        }
+      }
+
+      // Show success message
+      alert(`✅ Successfully deployed version ${version.version} to production!\n\n` +
+            `This prompt is now live for all users.`);
+
+      // TODO: In the future, this would actually write to a production file/API
+      // For now, it's stubbed and just updates the status
+      console.log('Deployment stubbed - would write to production file/API here');
+
+    } catch (error: any) {
+      console.error('Failed to deploy:', error);
+      alert(`Failed to deploy: ${error.message}`);
+    } finally {
+      setIsDeploying(false);
+    }
   };
 
   // Diff algorithm - line-based diff with proper alignment
@@ -494,6 +558,24 @@ export const PromptEditor: React.FC<PromptEditorProps> = ({ promptId, onBack, on
             >
                 {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
                 <span>{isSaving ? 'Saving...' : 'Save New Version'}</span>
+             </button>
+             <button
+                onClick={handleDeploy}
+                disabled={isDeploying || !currentVersion || currentVersion.status === 'production'}
+                className="flex items-center space-x-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-200"
+                title={currentVersion?.status === 'production' ? 'This version is already in production' : 'Deploy this version to production'}
+            >
+                {isDeploying ? (
+                    <>
+                        <RefreshCw size={16} className="animate-spin" />
+                        <span>Deploying...</span>
+                    </>
+                ) : (
+                    <>
+                        <Rocket size={16} />
+                        <span>Deploy to Production</span>
+                    </>
+                )}
              </button>
         </div>
       </div>

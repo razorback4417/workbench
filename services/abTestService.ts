@@ -139,8 +139,15 @@ export const determineWinner = async (testId: string): Promise<number | null> =>
 
       if (score > bestScore) {
         bestScore = score;
+        // Use the variantIndex from metrics, which corresponds to the original test.variants index
         winner = metrics.variantIndex;
       }
+    }
+
+    // Verify winner is valid (within bounds of test.variants)
+    if (winner !== null && (winner < 0 || winner >= test.variants.length)) {
+      console.warn('Winner index out of bounds, returning null');
+      return null;
     }
 
     return winner;

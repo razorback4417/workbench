@@ -1,0 +1,19 @@
+{
+  "name": "@flux/sdk",
+  "version": "0.1.0",
+  "description": "Flux SDK for prompt management and LLM operations",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "llm",
+    "prompt",
+    "ai",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

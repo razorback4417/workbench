@@ -60,6 +60,10 @@ export interface LogEntry {
   tokens: number;
   status: 'success' | 'error';
   model: string;
+  regressionDetected?: boolean;
+  regressionReason?: string;
+  qualityScore?: number; // 0-100, AI-evaluated quality
+  previousQualityScore?: number; // For comparison
 }
 
 export interface EvalResultItem {
@@ -68,6 +72,7 @@ export interface EvalResultItem {
   expectedOutput?: string;
   score: number;
   gradeReason?: string;
+  suggestions?: string[];
 }
 
 export interface EvalRun {
@@ -75,10 +80,12 @@ export interface EvalRun {
   name: string;
   date: string;
   promptVersionId: string;
+  promptId?: string; // Added for deployment
   score: number; // 0-100
   status: 'passed' | 'failed' | 'running';
   sampleSize: number;
   results?: EvalResultItem[];
+  improvementSuggestions?: string[]; // AI-generated suggestions
 }
 
 export interface ABTest {

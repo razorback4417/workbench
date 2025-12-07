@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, ChevronDown, ChevronRight, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, AlertCircle, CheckCircle, XCircle, TrendingDown, TrendingUp } from 'lucide-react';
 import { storage } from '../services/storage';
 import { LogEntry, Prompt } from '../types';
 
@@ -149,6 +149,18 @@ export const LogsViewer: React.FC = () => {
                                                     )}
                                                     <span>{log.status.toUpperCase()}</span>
                                                 </span>
+                                                {log.regressionDetected && (
+                                                    <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 border border-red-300 flex items-center">
+                                                        <TrendingDown size={10} className="mr-1" />
+                                                        Regression
+                                                    </span>
+                                                )}
+                                                {log.previousQualityScore && log.qualityScore && log.qualityScore > log.previousQualityScore && (
+                                                    <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800 border border-green-300 flex items-center">
+                                                        <TrendingUp size={10} className="mr-1" />
+                                                        Improved
+                                                    </span>
+                                                )}
                                                 {errorCategory && (
                                                     <span className="px-2 py-1 rounded text-xs bg-orange-50 text-orange-700 border border-orange-200">
                                                         {errorCategory}
@@ -182,11 +194,46 @@ export const LogsViewer: React.FC = () => {
                                                     </div>
                                                     <div>
                                                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Output</div>
-                                                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <div className={`rounded-lg p-3 border ${
+                                                            log.regressionDetected
+                                                                ? 'bg-red-50 border-red-200'
+                                                                : log.previousQualityScore && log.qualityScore && log.qualityScore > log.previousQualityScore
+                                                                ? 'bg-green-50 border-green-200'
+                                                                : 'bg-white border-gray-200'
+                                                        }`}>
                                                             <pre className="text-xs text-gray-800 whitespace-pre-wrap max-h-96 overflow-y-auto">
                                                                 {log.output}
                                                             </pre>
                                                         </div>
+                                                        {log.regressionDetected && log.regressionReason && (
+                                                            <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded text-xs text-red-800">
+                                                                <span className="font-semibold">Regression Issue:</span> {log.regressionReason}
+                                                            </div>
+                                                        )}
+                                                        {log.previousQualityScore && log.qualityScore && (
+                                                            <div className="mt-2 flex items-center space-x-4 text-xs">
+                                                                <div>
+                                                                    <span className="text-gray-500">Previous Quality:</span>
+                                                                    <span className="ml-2 font-semibold text-red-600">{log.previousQualityScore}%</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-gray-500">Current Quality:</span>
+                                                                    <span className={`ml-2 font-semibold ${
+                                                                        log.qualityScore > log.previousQualityScore ? 'text-green-600' : 'text-red-600'
+                                                                    }`}>
+                                                                        {log.qualityScore}%
+                                                                    </span>
+                                                                </div>
+                                                                {log.qualityScore > log.previousQualityScore && (
+                                                                    <div className="flex items-center text-green-600">
+                                                                        <TrendingUp size={12} className="mr-1" />
+                                                                        <span className="font-semibold">
+                                                                            +{log.qualityScore - log.previousQualityScore}% improvement
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>

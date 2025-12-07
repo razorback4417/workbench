@@ -153,6 +153,57 @@ export const DocsPopup: React.FC<DocsPopupProps> = ({ isOpen, onClose }) => {
             </div>
           </section>
 
+          {/* SDK Section */}
+          <section>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">SDK Integration</h3>
+            <p className="text-gray-600 mb-4 text-sm">
+              Integrate Flux into your applications using our JavaScript/TypeScript SDK. The SDK provides a simple API for fetching prompts, running them, and accessing logs and metrics.
+            </p>
+
+            <div className="space-y-4">
+              <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre className="text-sm text-gray-100">
+                  <code>{`// Install the SDK
+npm install @flux/sdk
+
+// Initialize the client
+import { FluxClient } from '@flux/sdk';
+
+const flux = new FluxClient({
+  apiKey: 'your-api-key',
+  baseUrl: 'https://api.flux.ai'
+});
+
+// Run a prompt
+const response = await flux.prompts.run('prompt-id', {
+  variable1: 'value1',
+  variable2: 'value2'
+});
+
+console.log(response.text);`}</code>
+                </pre>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h4 className="font-medium text-gray-900 mb-2 text-sm">Key SDK Methods</h4>
+                <ul className="space-y-1 text-xs text-gray-600">
+                  <li><code className="bg-gray-100 px-1.5 py-0.5 rounded">flux.prompts.get(id)</code> - Fetch a prompt</li>
+                  <li><code className="bg-gray-100 px-1.5 py-0.5 rounded">flux.prompts.run(id, variables)</code> - Execute a prompt</li>
+                  <li><code className="bg-gray-100 px-1.5 py-0.5 rounded">flux.prompts.create(data)</code> - Create new prompt</li>
+                  <li><code className="bg-gray-100 px-1.5 py-0.5 rounded">flux.logs.list(options)</code> - Get execution logs</li>
+                  <li><code className="bg-gray-100 px-1.5 py-0.5 rounded">flux.evaluations.run(config)</code> - Run evaluations</li>
+                  <li><code className="bg-gray-100 px-1.5 py-0.5 rounded">flux.abTests.create(config)</code> - Create A/B tests</li>
+                </ul>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <p className="text-sm text-blue-900">
+                  <strong>💡 Tip:</strong> The SDK automatically handles version management, logging, and metrics tracking. All prompt executions are automatically logged with latency, cost, and token usage.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Workflow */}
           <section>
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Typical Workflow</h3>
@@ -184,6 +235,10 @@ export const DocsPopup: React.FC<DocsPopupProps> = ({ isOpen, onClose }) => {
                 </li>
                 <li className="flex items-start">
                   <span className="font-semibold text-blue-900 mr-2">7.</span>
+                  <span>Integrate into your app using the SDK</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="font-semibold text-blue-900 mr-2">8.</span>
                   <span>Monitor performance in Dashboard and Logs</span>
                 </li>
               </ol>

@@ -111,7 +111,7 @@ export const evaluateResponse = async (
   input: string,
   output: string,
   criteria: string
-): Promise<{ score: number; reasoning: string }> => {
+): Promise<{ score: number; reasoning: string; suggestions?: string[] }> => {
   const apiKey = await storage.getApiKey('gemini') || (process.env.GEMINI_API_KEY as string);
 
   if (!apiKey) {
@@ -129,7 +129,14 @@ Criteria: "${criteria}"
 
 Respond with a JSON object containing:
 - score: number (0-100)
-- reasoning: string (brief explanation)
+- reasoning: string (brief explanation of the score)
+- suggestions: array of strings (3-5 specific, actionable suggestions for improving the prompt if score < 70, otherwise empty array)
+
+IMPORTANT: For scores below 70, suggestions MUST be:
+1. Specific and actionable (e.g., "ADD instruction: 'Always include [specific element]'")
+2. Reference exact parts of the prompt that need changes
+3. Include examples of what to add/change
+4. Focus on prompt editing, not just general feedback
 `;
 
     const response = await ai.models.generateContent({
@@ -142,13 +149,107 @@ Respond with a JSON object containing:
     });
 
     const result = JSON.parse(response.text || '{}');
+    const score = result.score || 0;
+    const reasoning = result.reasoning || "Failed to parse evaluation result.";
+    let suggestions = result.suggestions || [];
+
+    // Ensure failures always have suggestions - generate fallback if missing
+    if (score < 70 && suggestions.length === 0) {
+      suggestions = [
+        `Review the output against the criteria: "${criteria}". The output scored ${score}/100.`,
+        `Consider adding more specific instructions to address: ${reasoning.substring(0, 100)}`,
+        `Add examples or constraints to guide the model toward the expected output format.`
+      ];
+    }
+
     return {
-      score: result.score || 0,
-      reasoning: result.reasoning || "Failed to parse evaluation result."
+      score,
+      reasoning,
+      suggestions
     };
   } catch (e: any) {
     console.error("Eval failed", e);
     return { score: 0, reasoning: `Evaluation failed: ${e.message || "Unknown error"}` };
+  }
+};
+
+// Generate overall improvement suggestions based on evaluation results
+export const generateImprovementSuggestions = async (
+  promptTemplate: string,
+  failedResults: Array<{ input: Record<string, string>; output: string; score: number; gradeReason?: string }>
+): Promise<string[]> => {
+  const apiKey = await storage.getApiKey('gemini') || (process.env.GEMINI_API_KEY as string);
+
+  if (!apiKey || failedResults.length === 0) {
+    return [];
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const suggestionPrompt = `
+You are a prompt engineering expert. Analyze the following prompt template and its failed test cases to provide actionable, specific improvement suggestions.
+
+Current Prompt Template:
+"""
+${promptTemplate}
+"""
+
+Failed Test Cases:
+${failedResults.map((r, i) => `
+Test ${i + 1}:
+- Input: ${JSON.stringify(r.input)}
+- Output: ${r.output.substring(0, 300)}${r.output.length > 300 ? '...' : ''}
+- Score: ${r.score}/100
+- Reason: ${r.gradeReason || 'N/A'}
+${r.output.length > 300 ? `\n- Full Output Length: ${r.output.length} characters` : ''}
+`).join('\n')}
+
+Analyze the patterns in the failures and provide 4-6 highly specific, actionable suggestions. Each suggestion should:
+1. Be concrete and implementable (not vague like "improve quality")
+2. Reference specific parts of the prompt or test cases
+3. Include examples of what to add/change when possible
+4. Address the root cause of the failures, not just symptoms
+5. Consider edge cases and error handling
+
+CRITICAL: Format suggestions using action verbs that clearly indicate what to ADD, RESTORE, INCLUDE, SPECIFY, or REQUIRE in the prompt:
+- Use "ADD instruction:" or "INCLUDE requirement:" for new instructions
+- Use "RESTORE" for instructions that were removed
+- Use "SPECIFY:" for clarifying existing instructions
+- Use "REQUIRE:" for mandatory constraints
+- Include exact text or examples to add when possible
+
+Focus areas:
+- Missing instructions or context that would prevent the observed failures
+- Output format requirements that aren't specified
+- Edge case handling (null values, empty inputs, extreme values)
+- Tone, style, or structure requirements
+- Variable usage and how they should be incorporated
+- Examples or few-shot demonstrations that might help
+- Constraints or guardrails needed
+
+Respond with a JSON object containing:
+- suggestions: array of strings (each suggestion should start with an action verb like "ADD", "RESTORE", "INCLUDE", "SPECIFY", or "REQUIRE" and provide exact guidance)
+- priority: array of strings matching the suggestions, indicating "high", "medium", or "low" priority
+`;
+
+    const response = await ai.models.generateContent({
+      model: ModelType.GEMINI_2_5_FLASH,
+      contents: suggestionPrompt,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.5
+      }
+    });
+
+    const result = JSON.parse(response.text || '{}');
+    // Return suggestions with priority if available, otherwise just suggestions
+    const suggestions = result.suggestions || [];
+    // If priority is provided, we can use it for sorting/filtering in the UI
+    // For now, just return suggestions as before for backward compatibility
+    return suggestions;
+  } catch (e: any) {
+    console.error("Failed to generate suggestions", e);
+    return [];
   }
 };
 

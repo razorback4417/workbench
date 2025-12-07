@@ -9,7 +9,8 @@ import {
   Zap,
   Box,
   ChevronRight,
-  GitBranch
+  GitBranch,
+  AlertTriangle
 } from 'lucide-react';
 import { CURRENT_USER } from '../services/mockData';
 import { DocsPopup } from './DocsPopup';
@@ -90,6 +91,12 @@ export const Layout: React.FC<{ children: React.ReactNode; currentView: string; 
               label="A/B Testing"
               isActive={currentView === 'abtesting'}
               onClick={() => onViewChange('abtesting')}
+            />
+            <SidebarItem
+              icon={AlertTriangle}
+              label="Regressions"
+              isActive={currentView === 'regressions'}
+              onClick={() => onViewChange('regressions')}
             />
           </div>
         </div>

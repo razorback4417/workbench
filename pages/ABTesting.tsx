@@ -330,6 +330,34 @@ export const ABTesting: React.FC = () => {
         </div>
       )}
 
+      {/* Summary Stats */}
+      {!loading && tests.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="text-xs text-gray-500 font-medium mb-1">Total Tests</div>
+            <div className="text-2xl font-bold text-gray-900">{tests.length}</div>
+          </div>
+          <div className="bg-white rounded-xl border border-green-200 p-4 bg-green-50/50">
+            <div className="text-xs text-green-600 font-medium mb-1">Running</div>
+            <div className="text-2xl font-bold text-green-700">
+              {tests.filter(t => t.status === 'running').length}
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="text-xs text-gray-500 font-medium mb-1">Completed</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {tests.filter(t => t.status === 'completed').length}
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-yellow-200 p-4 bg-yellow-50/50">
+            <div className="text-xs text-yellow-600 font-medium mb-1">Draft</div>
+            <div className="text-2xl font-bold text-yellow-700">
+              {tests.filter(t => t.status === 'draft').length}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tests List */}
       {loading ? (
         <div className="text-center py-12 text-gray-400">Loading tests...</div>
@@ -456,7 +484,11 @@ export const ABTesting: React.FC = () => {
                         </div>
 
                         {variantMetric ? (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="text-2xl font-bold text-gray-900">{variantMetric.successRate.toFixed(1)}%</div>
+                              <div className="text-xs text-gray-500">Success Rate</div>
+                            </div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
                                 <span className="text-gray-500">Requests:</span>
@@ -464,8 +496,8 @@ export const ABTesting: React.FC = () => {
                               </div>
                               <div>
                                 <span className="text-gray-500">Success:</span>
-                                <span className={`ml-1 font-mono font-semibold ${variantMetric.successRate >= 90 ? 'text-green-600' : 'text-gray-900'}`}>
-                                  {variantMetric.successRequests} ({variantMetric.successRate.toFixed(1)}%)
+                                <span className={`ml-1 font-mono font-semibold ${variantMetric.successRate >= 90 ? 'text-green-600' : variantMetric.successRate >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                  {variantMetric.successRequests}
                                 </span>
                               </div>
                               <div>
@@ -479,16 +511,36 @@ export const ABTesting: React.FC = () => {
                                 <span className="text-gray-500">Latency:</span>
                                 <span className="ml-1 font-mono">{variantMetric.avgLatency}ms</span>
                               </div>
+                              <div className="flex items-center">
+                                <DollarSign size={12} className="text-gray-400 mr-1" />
+                                <span className="text-gray-500">Cost:</span>
+                                <span className="ml-1 font-mono">${variantMetric.avgCost.toFixed(4)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Error Rate:</span>
+                                <span className={`ml-1 font-mono font-semibold ${variantMetric.errorRate > 10 ? 'text-red-600' : 'text-gray-900'}`}>
+                                  {variantMetric.errorRate.toFixed(1)}%
+                                </span>
+                              </div>
                             </div>
 
                             {variantMetric.errorLogs && variantMetric.errorLogs.length > 0 && (
                               <div className="mt-3 pt-2 border-t border-gray-200">
-                                <div className="text-xs font-semibold text-red-600 mb-1">Recent Errors:</div>
-                                {variantMetric.errorLogs.map((log: LogEntry, i: number) => (
-                                  <div key={i} className="text-xs text-red-600 mb-1 truncate" title={log.output}>
-                                    {log.output.substring(0, 60)}...
-                                  </div>
-                                ))}
+                                <div className="text-xs font-semibold text-red-600 mb-2">Recent Errors ({variantMetric.errorLogs.length}):</div>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {variantMetric.errorLogs.map((log: LogEntry, i: number) => (
+                                    <div key={i} className="text-xs text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                                      <div className="font-mono whitespace-pre-wrap break-words">
+                                        {log.output}
+                                      </div>
+                                      {log.inputs && Object.keys(log.inputs).length > 0 && (
+                                        <div className="mt-1 text-red-600 text-xs">
+                                          Input: {JSON.stringify(log.inputs)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -523,16 +575,73 @@ export const ABTesting: React.FC = () => {
                   </div>
                 )}
 
-                {winnerIndex !== null && isCompleted && winnerIndex >= 0 && winnerIndex < test.variants.length && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center text-sm text-green-800">
-                      <Trophy size={16} className="mr-2" />
-                      <span className="font-medium">
-                        Test completed. Winner: Variant {winnerIndex + 1} ({prompts.find(p => p.id === test.variants[winnerIndex].promptId)?.name})
-                      </span>
+                {winnerIndex !== null && isCompleted && winnerIndex >= 0 && winnerIndex < test.variants.length && (() => {
+                  const winnerVariant = test.variants[winnerIndex];
+                  const winnerPrompt = prompts.find(p => p.id === winnerVariant.promptId);
+                  const winnerVersion = winnerPrompt?.versions.find(v => v.id === winnerVariant.versionId);
+                  const winnerMetric = metrics.find(m => m.variantIndex === winnerIndex);
+                  const otherMetrics = metrics.filter(m => m.variantIndex !== winnerIndex);
+
+                  return (
+                    <div className="mt-4 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
+                      <div className="flex items-start space-x-3 mb-3">
+                        <Trophy size={20} className="text-green-700 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="text-base font-bold text-green-900 mb-1">
+                            Test Completed - Winner: Variant {winnerIndex + 1}
+                          </div>
+                          <div className="text-sm text-green-800">
+                            {winnerPrompt?.name} (v{winnerVersion?.version})
+                          </div>
+                        </div>
+                      </div>
+
+                      {winnerMetric && otherMetrics.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-green-300">
+                          <div className="text-xs font-semibold text-green-800 mb-2">Why This Variant Won:</div>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            {winnerMetric.successRate > (otherMetrics[0]?.successRate || 0) && (
+                              <div className="bg-white/50 p-2 rounded border border-green-200">
+                                <div className="text-green-700 font-semibold">Success Rate</div>
+                                <div className="text-green-900">
+                                  {winnerMetric.successRate.toFixed(1)}% vs {otherMetrics[0]?.successRate.toFixed(1)}%
+                                  <span className="text-green-600 ml-1">(+{(winnerMetric.successRate - (otherMetrics[0]?.successRate || 0)).toFixed(1)}%)</span>
+                                </div>
+                              </div>
+                            )}
+                            {winnerMetric.avgLatency < (otherMetrics[0]?.avgLatency || Infinity) && (
+                              <div className="bg-white/50 p-2 rounded border border-green-200">
+                                <div className="text-green-700 font-semibold">Latency</div>
+                                <div className="text-green-900">
+                                  {winnerMetric.avgLatency}ms vs {otherMetrics[0]?.avgLatency}ms
+                                  <span className="text-green-600 ml-1">({((otherMetrics[0]?.avgLatency || 0) - winnerMetric.avgLatency).toFixed(0)}ms faster)</span>
+                                </div>
+                              </div>
+                            )}
+                            {winnerMetric.avgCost < (otherMetrics[0]?.avgCost || Infinity) && (
+                              <div className="bg-white/50 p-2 rounded border border-green-200">
+                                <div className="text-green-700 font-semibold">Cost</div>
+                                <div className="text-green-900">
+                                  ${winnerMetric.avgCost.toFixed(4)} vs ${otherMetrics[0]?.avgCost.toFixed(4)}
+                                  <span className="text-green-600 ml-1">(${((otherMetrics[0]?.avgCost || 0) - winnerMetric.avgCost).toFixed(4)} cheaper)</span>
+                                </div>
+                              </div>
+                            )}
+                            {winnerMetric.errorRate < (otherMetrics[0]?.errorRate || Infinity) && (
+                              <div className="bg-white/50 p-2 rounded border border-green-200">
+                                <div className="text-green-700 font-semibold">Error Rate</div>
+                                <div className="text-green-900">
+                                  {winnerMetric.errorRate.toFixed(1)}% vs {otherMetrics[0]?.errorRate.toFixed(1)}%
+                                  <span className="text-green-600 ml-1">({((otherMetrics[0]?.errorRate || 0) - winnerMetric.errorRate).toFixed(1)}% lower)</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })}

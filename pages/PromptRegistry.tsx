@@ -34,12 +34,15 @@ export const PromptRegistry: React.FC<{ onSelectPrompt: (promptId: string) => vo
       name: newPromptName,
       description: newPromptDescription || 'No description',
       tags: tags,
-      activeVersionId: '',
+      activeVersionId: '', // Will be set by createPromptVersion
       updatedAt: new Date().toISOString(),
       versions: []
     };
 
-    // Create initial version
+    // Save prompt first (required before creating version)
+    await storage.savePrompt(newPrompt);
+
+    // Create initial version (this will set activeVersionId automatically)
     const initialVersion = await storage.createPromptVersion(newPrompt.id, {
       template: 'You are a helpful assistant. {{user_message}}',
       variables: ['user_message'],
@@ -47,11 +50,6 @@ export const PromptRegistry: React.FC<{ onSelectPrompt: (promptId: string) => vo
       temperature: 0.7,
       commitMessage: 'Initial version'
     });
-
-    newPrompt.activeVersionId = initialVersion.id;
-    newPrompt.versions = [initialVersion];
-
-    await storage.savePrompt(newPrompt);
 
     // Refresh list
     const updatedPrompts = await storage.getPrompts();

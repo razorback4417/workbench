@@ -8,6 +8,7 @@ import { Evaluations } from './pages/Evaluations';
 import { LogsViewer } from './pages/LogsViewer';
 import { Settings } from './pages/Settings';
 import { ABTesting } from './pages/ABTesting';
+import { RegressionHistory } from './pages/RegressionHistory';
 import { storage } from './services/storage';
 
 const App: React.FC = () => {
@@ -35,7 +36,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'registry':
         return <PromptRegistry key={registryRefreshKey} onSelectPrompt={handleSelectPrompt} />;
       case 'editor':
@@ -55,6 +56,8 @@ const App: React.FC = () => {
         return <LogsViewer />;
       case 'abtesting':
         return <ABTesting />;
+      case 'regressions':
+        return <RegressionHistory />;
       case 'settings':
         return <Settings />;
       default:

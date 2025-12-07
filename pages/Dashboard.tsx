@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar
 } from 'recharts';
-import { ArrowUpRight, Clock, DollarSign, Zap } from 'lucide-react';
+import { ArrowUpRight, Clock, DollarSign, Zap, AlertTriangle, ArrowRight } from 'lucide-react';
 import { storage } from '../services/storage';
 import { LogEntry } from '../types';
+import { getRegressionAlerts } from '../services/regressionService';
 
 const StatCard = ({ title, value, change, icon: Icon, subtext }: any) => (
   <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-40">
@@ -32,15 +33,26 @@ const StatCard = ({ title, value, change, icon: Icon, subtext }: any) => (
   </div>
 );
 
-export const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onNavigate?: (view: string) => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [regressionAlerts, setRegressionAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    storage.getLogs().then(data => {
-      setLogs(data);
+    const loadData = async () => {
+      const [logsData, alertsData] = await Promise.all([
+        storage.getLogs(),
+        getRegressionAlerts()
+      ]);
+      setLogs(logsData);
+      setRegressionAlerts(alertsData.filter(a => !a.fixed));
       setLoading(false);
-    });
+    };
+    loadData();
   }, []);
 
   // Compute stats
@@ -78,6 +90,31 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Regression Alerts */}
+      {regressionAlerts.length > 0 && (
+        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle size={24} className="text-red-600 mt-0.5" />
+              <div>
+                <h3 className="text-lg font-bold text-red-900 mb-1">
+                  {regressionAlerts.length} Active Regression{regressionAlerts.length !== 1 ? 's' : ''} Detected
+                </h3>
+                <p className="text-sm text-red-700 mb-3">
+                  Quality degradation detected in {regressionAlerts.length} prompt{regressionAlerts.length !== 1 ? 's' : ''}. Review and fix to restore quality.
+                </p>
+                <button
+                  onClick={() => onNavigate && onNavigate('regressions')}
+                  className="text-sm font-medium text-red-700 hover:text-red-900 flex items-center"
+                >
+                  View Regressions <ArrowRight size={14} className="ml-1" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Requests" value={totalRequests.toLocaleString()} change={12.5} icon={Zap} subtext="Volume is trending up" />
         <StatCard title="Avg Latency" value={`${avgLatency}ms`} change={-5.2} icon={Clock} subtext="Performance improved" />
@@ -100,7 +137,7 @@ export const Dashboard: React.FC = () => {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} dy={10} />
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} />
-                        <Tooltip 
+                        <Tooltip
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ color: '#111827', fontSize: '13px', fontWeight: 600 }}
                         />
@@ -117,7 +154,7 @@ export const Dashboard: React.FC = () => {
                     <BarChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#6B7280'}} dy={10} />
-                        <Tooltip 
+                        <Tooltip
                             cursor={{fill: '#F9FAFB'}}
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         />

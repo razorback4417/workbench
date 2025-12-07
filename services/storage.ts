@@ -1,5 +1,5 @@
 import { Prompt, LogEntry, EvalRun, PromptVersion, ModelType } from '../types';
-import { MOCK_PROMPTS, MOCK_LOGS, MOCK_EVALS } from './mockData';
+import { MOCK_PROMPTS, MOCK_LOGS, MOCK_EVALS, MOCK_AB_TESTS, MOCK_AB_TEST_LOGS } from './mockData';
 
 const STORAGE_KEYS = {
   PROMPTS: 'pw_prompts',
@@ -8,6 +8,8 @@ const STORAGE_KEYS = {
   API_KEYS: 'pw_api_keys',
   SETTINGS: 'pw_settings',
   EVAL_DATASETS: 'pw_eval_datasets',
+  AB_TESTS: 'pw_ab_tests',
+  REGRESSION_ALERTS: 'pw_regression_alerts',
 };
 
 // Initialize storage with mock data if empty
@@ -16,10 +18,25 @@ const initStorage = () => {
     localStorage.setItem(STORAGE_KEYS.PROMPTS, JSON.stringify(MOCK_PROMPTS));
   }
   if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
-    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(MOCK_LOGS));
+    // Combine regular mock logs with A/B test logs
+    const allLogs = [...MOCK_LOGS, ...MOCK_AB_TEST_LOGS];
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(allLogs));
   }
-  if (!localStorage.getItem(STORAGE_KEYS.EVALS)) {
-    localStorage.setItem(STORAGE_KEYS.EVALS, JSON.stringify(MOCK_EVALS));
+
+  // For evals, merge new mock data with existing (add new ones that don't exist)
+  const existingEvals = JSON.parse(localStorage.getItem(STORAGE_KEYS.EVALS) || '[]');
+  const existingEvalIds = new Set(existingEvals.map((e: EvalRun) => e.id));
+  const newEvals = MOCK_EVALS.filter(e => !existingEvalIds.has(e.id));
+  if (newEvals.length > 0 || existingEvals.length === 0) {
+    localStorage.setItem(STORAGE_KEYS.EVALS, JSON.stringify([...newEvals, ...existingEvals]));
+  }
+
+  // For AB tests, merge new mock data with existing
+  const existingABTests = JSON.parse(localStorage.getItem(STORAGE_KEYS.AB_TESTS) || '[]');
+  const existingABTestIds = new Set(existingABTests.map((t: any) => t.id));
+  const newABTests = MOCK_AB_TESTS.filter(t => !existingABTestIds.has(t.id));
+  if (newABTests.length > 0 || existingABTests.length === 0) {
+    localStorage.setItem(STORAGE_KEYS.AB_TESTS, JSON.stringify([...newABTests, ...existingABTests]));
   }
 };
 
